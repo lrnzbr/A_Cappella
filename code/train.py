@@ -69,40 +69,51 @@ def chop_song(handle, folder):
     del snippet_list[-1]
     return snippet_list
 
-# def transform_multiple(snippet_list):
-#     prints = []
-#     ids = []
-#     labels = []
-#     transform = pd.DataFrame()
-#     print "Transforming to frequency domain...."
-#     for i, item in enumerate(snippet_list):
-#         try:
-#             fs, data = wavfile.read(item[0]) # load the data
-#             #print "data: ", data
-#             a = data.T[0] # this is a two channel soundtrack, It gets the first track
-#             b=[(ele/2**8.)*2-1 for ele in a] # this is 8-bit track, b is now normalized on [-1,1)
-#             c = fft(b) # calculate fourier transform (complex numbers list)
-#             d = len(c)/2  # you only need half of the fft list (real signal symmetry)
-#             #plt.plot(abs(c[:(d-1)]),'r')
-#             #plt.show()
-#             thumbprint = abs(c[:(d-1)])
-#             prints.append(thumbprint)
-#             ids.append(item[1])
-#             labels.append(item[2])
-#         except ValueError:
-#             print "dead silence in track"
-#             pass
-#     return prints,ids, labels
-
 def transform_multiple(snippet_list):
-    transformations = []
+    prints = []
     labels = []
-    for snippet in snippet_list:
-        transformation = single_file_featurization(snippet[0])
-        transformations.append(transformation)
-        labels.append(snippet[1])
+    transform = pd.DataFrame()
+    print "Transforming to frequency domain...."
+    for i, item in enumerate(snippet_list):
+        try:
+            fs, data = wavfile.read(item[0]) # load the data
+            #print "data: ", data
+            a = data.T[0] # this is a two channel soundtrack, It gets the first track
+            b=[(ele/2**8.)*2-1 for ele in a] # this is 8-bit track, b is now normalized on [-1,1)
+            c = fft(b) # calculate fourier transform (complex numbers list)
+            d = len(c)/2  # you only need half of the fft list (real signal symmetry)
+            #plt.plot(abs(c[:(d-1)]),'r')
+            #plt.show()
+            thumbprint = abs(c[:(d-1)])
+            prints.append(thumbprint)
+            labels.append(item[1])
+        except ValueError:
+            print "dead silence in track"
+            pass
+    return prints, labels
 
-    return transformations, labels
+    def transform_one_fft(item):
+        fs, data = wavfile.read(item[0]) # load the data
+        #print "data: ", data
+        a = data.T[0] # this is a two channel soundtrack, It gets the first track
+        b=[(ele/2**8.)*2-1 for ele in a] # this is 8-bit track, b is now normalized on [-1,1)
+        c = fft(b) # calculate fourier transform (complex numbers list)
+        d = len(c)/2  # you only need half of the fft list (real signal symmetry)
+        #plt.plot(abs(c[:(d-1)]),'r')
+        #plt.show()
+        thumbprint = abs(c[:(d-1)])
+        return thumbprint
+
+
+# def transform_multiple_peak_analysis(snippet_list):
+#     transformations = []
+#     labels = []
+#     for snippet in snippet_list:
+#         transformation = single_file_featurization(snippet[0])
+#         transformations.append(transformation)
+#         labels.append(snippet[1])
+#
+#     return transformations, labels
 
 '''FIX THIS LATER I guess'''
 # def make_some_noise(prints, number_of_copies):
@@ -138,13 +149,14 @@ def transform_multiple(snippet_list):
 
 
 
-def fit_rf(prints):
-    print "Fitting to random forest...."
-    dataframe = pd.DataFrame(prints)
-    y = dataframe[len(dataframe)-1]
-    y = y.reshape(1,-1)
-    X = dataframe[0:len(dataframe) - 2]
+def fit_rf(X, y):
     X = X.fillna(0)
+    print "Fitting to random forest...."
+    #dataframe = pd.DataFrame(prints)
+    #y = dataframe[len(dataframe)-1]
+    #y = y.reshape(1,-1)
+    #X = dataframe[0:len(dataframe) - 2]
+    #X = X.fillna(0)
     rf.fit(X, y)
     pickle_model(rf, 'rf')
 
@@ -175,7 +187,7 @@ def getModel(pickle_path):
 
 
 def pickle_model(model, modelname):
-    with open('models/' + str(modelname) + '.pkl', 'wb') as f:
+    with open('../models/' + str(modelname) + '.pkl', 'wb') as f:
         return cPickle.dump(model, f)
 
 def convert_to_timestamp(y_val):
@@ -279,9 +291,9 @@ if __name__ == '__main__':
     prints, labels = transform_multiple(snippets)
     df = pd.DataFrame(prints)
     y = np.concatenate((y,labels), axis = 0)
-    X.append(df)
-    print X.head()
+    X = X.append(df)
 
+    fit_rf(X,y)
 
     # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2, random_state=1)
     #
@@ -299,31 +311,31 @@ if __name__ == '__main__':
     # print "    Decision Tree:", get_scores(DecisionTreeClassifier, X_train, X_test, y_train, y_test)
     # print "    SVM:", get_scores(SVC, X_train, X_test, y_train, y_test)
     # print "    Naive Bayes:", get_scores(MultinomialNB, X_train, X_test, y_train, y_test)
-    #ss = StandardScaler()
-    #X = ss.fit_transform(X)
-
-    lda = LinearDiscriminantAnalysis()
-
-    X_lda = lda.fit_transform(X, y)
+    # ss = StandardScaler()
+    # X = ss.fit_transform(X)
+    #
+    # lda = LinearDiscriminantAnalysis()
+    #
+    # X_lda = lda.fit_transform(X, y)
 
 
     # trains model using best performing model/hyperparameters using kfold grid search
-    svm = SVC(C=1, gamma=0.04)
-    #svm.fit(X_lda, y)
-    svm.fit(X,y)
+    # svm = SVC(C=1, gamma=0.04)
+    # svm.fit(X_lda, y)
+    # svm.fit(X,y)
     # accuracy check to make sure the model is performing
     #y_pred_svm = svm.predict(X_lda)
-    y_pred_svm = svm.predict(X)
-    print 'model accuracy: ', accuracy_score(y, y_pred_svm)
+    #y_pred_svm = svm.predict(X)
+    #print 'model accuracy: ', accuracy_score(y, y_pred_svm)
 
     # cPickles models for later use
-    with open('../models/svm.pkl', 'wb') as f:
-        cPickle.dump(svm, f)
-
-    #with open('models/lda.pkl', 'wb') as f:
-        #cPickle.dump(lda, f)
-
-    with open('../models/ss.pkl', 'wb') as f:
-        cPickle.dump(ss, f)
+    # with open('../models/svm.pkl', 'wb') as f:
+    #     cPickle.dump(svm, f)
+    #
+    # #with open('models/lda.pkl', 'wb') as f:
+    #     #cPickle.dump(lda, f)
+    #
+    # with open('../models/ss.pkl', 'wb') as f:
+    #     cPickle.dump(ss, f)
 
     print "Models ready!"

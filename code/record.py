@@ -82,7 +82,8 @@ def chop_input(wav_queue):
             snippet_list = []
 
             print "Slicing Audio file..."
-            for i in xrange(num_secs):
+            #for i in xrange(num_secs):
+            for i in xrange(38):
                 '''TODO: USE STRINGIO'''
                 #wav_buffer = StringIO.StringIO(buffer)
                 handle2 = '../audio/sample/'+str(i)+'snippet.wav'
@@ -91,7 +92,7 @@ def chop_input(wav_queue):
                 snippet.setsampwidth(handle.getsampwidth())
                 snippet.setframerate(frame_rate)
                 snippet.writeframes(handle.readframes(window_size))
-                handle.setpos(handle.tell() - 1 * frame_rate)
+                handle.setpos(handle.tell() - int(1.8 * frame_rate))
                 snippet.close()
                 wav_queue.put(handle2)
             handle.close()

@@ -29,7 +29,7 @@ prediction_queue = Queue.Queue()
 # tranformation_thread.start()
 # recording_thread.start()
 
-model = model = getModel('../models/svm.pkl')
+model = model = getModel('../models/rf.pkl')
 try:
    thread.start_new_thread( transform, (wav_queue, fft_queue, ) )
    thread.start_new_thread(predict, (fft_queue, prediction_queue, model))
