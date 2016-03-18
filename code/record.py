@@ -6,8 +6,12 @@ import StringIO
 import Queue
 import thread
 import StringIO
-from time import sleep
+from time import  sleep
+import time
 import math
+from array import array
+from sys import byteorder
+
 
 STOP_FLAG = False
 
@@ -15,16 +19,23 @@ CHUNK = 1024
 FORMAT = pyaudio.paInt16
 CHANNELS = 2
 RATE = 44100
-RECORD_SECONDS = 8
-WAVE_OUTPUT_FILENAME = "../audio/test_output.wav"
+RECORD_SECONDS = 4
+WAVE_OUTPUT_FILENAME = "../audio/mic_input/test_output.wav"
+RECORD_FLAG = True
+THRESHOLD = 500
 
-p = pyaudio.PyAudio()
 
 input_queue = Queue.Queue()
+def is_silent(snd_data):
+    "Returns 'True' if below the 'silent' threshold"
+    #print "Input volume at", max(snd_data)
+    return max(snd_data) < THRESHOLD
 
-def record_8_sec():
-    while True:
+
+def record_4_sec():
+    while RECORD_FLAG == True:
         '''TODO: ADD STRINGIO'''
+        p = pyaudio.PyAudio()
         #wav_buffer = StringIO.StringIO(buffer)
         #handle = wave.open('../audio/sample/input.wav', 'wb')
         stream = p.open(format=FORMAT,
@@ -38,22 +49,30 @@ def record_8_sec():
         frames = []
 
         for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-            data = stream.read(CHUNK)
-            frames.append(data)
+            try:
+                data = stream.read(CHUNK)
+                snd_data = array('h', data)
+                if byteorder == 'big':
+                    snd_data.byteswap()
+                #if not is_silent(snd_data):
+                frames.append(data)
+            except:
+                pass
 
-        print("* done recording")
 
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
 
-        wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
-        wf.setnchannels(CHANNELS)
-        wf.setsampwidth(p.get_sample_size(FORMAT))
-        wf.setframerate(RATE)
-        wf.writeframes(b''.join(frames))
-        input_queue.put(WAVE_OUTPUT_FILENAME)
-        wf.close()
+        if frames:
+            print "writing out frames!"
+            wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
+            wf.setnchannels(CHANNELS)
+            wf.setsampwidth(p.get_sample_size(FORMAT))
+            wf.setframerate(RATE)
+            wf.writeframes(b''.join(frames))
+            input_queue.put([WAVE_OUTPUT_FILENAME, time.time()])
+            wf.close()
+            stream.stop_stream()
+            stream.close()
+            p.terminate()
 
 
         '''
@@ -73,7 +92,9 @@ def record_8_sec():
 def chop_input(wav_queue):
     while True:
         if not input_queue.empty():
-            handle = wave.open(input_queue.get(), 'rb')
+            print "Chop Worker waking up...\n"
+            dequeued_item = input_queue.get()
+            handle = wave.open(dequeued_item[0], 'rb')
             frame_rate = handle.getframerate()
             n_frames = handle.getnframes()
             window_size = 2 * frame_rate
@@ -86,22 +107,27 @@ def chop_input(wav_queue):
             for i in xrange(38):
                 '''TODO: USE STRINGIO'''
                 #wav_buffer = StringIO.StringIO(buffer)
-                handle2 = '../audio/sample/'+str(i)+'snippet.wav'
+                handle2 = '../audio/mic_input/'+str(i)+'snippet.wav'
                 snippet = wave.open(handle2 ,'wb')
                 snippet.setnchannels(2)
                 snippet.setsampwidth(handle.getsampwidth())
                 snippet.setframerate(frame_rate)
                 snippet.writeframes(handle.readframes(window_size))
-                handle.setpos(handle.tell() - int(1.8 * frame_rate))
+                try:
+                    handle.setpos(handle.tell() - int(1.8 * frame_rate))
+                    wav_queue.put([handle2, dequeued_item[1]])
+                except:
+                    pass
                 snippet.close()
-                wav_queue.put(handle2)
+
             handle.close()
         else:
-            print "Chop Worker waiting...\n"
-            sleep(1)
+            #print "Chop Worker waiting...\n"
+            sleep(.2)
 
 def run(wav_queue):
     print "running recorder...\n"
+
     #  chopper =Thread(target=chop_input, args = (wav_queue,))
     #  chopper.daemon = True
      #
@@ -111,7 +137,7 @@ def run(wav_queue):
     #  chopper.start()
     #  recorder.start()
     # try:
-    thread.start_new_thread(record_8_sec, ())
+    thread.start_new_thread(record_4_sec, ())
     thread.start_new_thread(chop_input, (wav_queue,))
     # except:
     #     print "recording thread failed!!!"
