@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import librosa as lr
 from scipy.stats import skew, kurtosis
-#import scipy.io.wavfile as wav
+import scipy.io.wavfile as wav
 
 from sklearn.cross_validation import train_test_split
 from sklearn.metrics import confusion_matrix, precision_score, recall_score
@@ -37,6 +37,9 @@ from scipy.io.wavfile import write
 
 import wave
 from allantools import noise
+
+
+import shutil
 
 '''
 STEPS FOR TRAINING:
@@ -78,8 +81,8 @@ sample_rate = 44100
 
 rf = RandomForestClassifier()
 
-def chop_song(handle, folder):
-
+def chop_song(filename, folder):
+    handle = wave.open(filename, 'rb')
     frame_rate = handle.getframerate()
     n_frames = handle.getnframes()
     window_size = 2 * frame_rate
@@ -103,8 +106,8 @@ def chop_song(handle, folder):
     del snippet_list[-1]
     return snippet_list
 
-def transform_multiple(snippet_list):
-    prints = []
+def transform_multiple_fft(snippet_list):
+    transformations = []
     #ids = []
     labels = []
     transform = pd.DataFrame()
@@ -121,14 +124,14 @@ def transform_multiple(snippet_list):
             #plt.show()
             thumbprint = abs(c[:(d-1)])
             prints.append(thumbprint)
-            ids.append(item[1])
-            labels.append(item[2])
+            #ids.append(item[1])
+            labels.append(item[1])
         except ValueError:
             print "dead silence in track"
             pass
-    return prints,ids, labels
+    return transformations,labels, #ids #
 
-def transform_multiple(snippet_list):
+def transform_multiple_peak_analysis(snippet_list):
     transformations = []
     labels = []
     for snippet in snippet_list:
@@ -140,15 +143,15 @@ def transform_multiple(snippet_list):
 
 
 
-def fit_rf(prints):
+def fit_rf(X, y, model_name='rf'):
     print "Fitting to random forest...."
-    dataframe = pd.DataFrame(prints)
-    y = dataframe[len(dataframe)-1]
-    y = y.reshape(1,-1)
-    X = dataframe[0:len(dataframe) - 2]
-    X = X.fillna(0)
+    # dataframe = pd.DataFrame(prints)
+    # y = dataframe[len(dataframe)-1]
+    # y = y.reshape(1,-1)
+    # X = dataframe[0:len(dataframe) - 2]
+    # X = X.fillna(0)
     rf.fit(X, y)
-    pickle_model(rf, 'rf')
+    pickle_model(rf, model_name)
 
 def fit_svm(prints):
     print "Fitting to SVM...."
@@ -177,7 +180,7 @@ def getModel(pickle_path):
 
 
 def pickle_model(model, modelname):
-    with open('models/' + str(modelname) + '.pkl', 'wb') as f:
+    with open('../models/' + str(modelname) + '.pkl', 'wb') as f:
         return cPickle.dump(model, f)
 
 def convert_to_timestamp(y_val):
@@ -285,8 +288,11 @@ def stretch(sound_array, f, window_size, h):
 
 def pitchshift(filename, n, window_size=2**13, h=2**11):
     """ Changes the pitch of a sound by ``n`` semitones. """
+    if n == 0:
+        return
+    print "Shifting  by %d steps" % n
 
-    snd_array = wavefile.read(filename)
+    fps, snd_array = wavfile.read(filename)
     factor = 2**(1.0 * n / 12.0)
     snd_array1 = snd_array[:,0]
     snd_array2 = snd_array[:,1]
@@ -294,7 +300,9 @@ def pitchshift(filename, n, window_size=2**13, h=2**11):
     stretched1 = stretch(snd_array1, 1.0/factor, window_size, h)
     stretched2 = stretch(snd_array2, 1.0/factor, window_size, h)
     stretched = np.array([stretched1, stretched2]).T
-    filename = "pitch_test.wav"
+    filename, file_extension = os.path.splitext(filename)
+    filename = filename+"pitchshift"+str(n)+".wav"
+
     write(filename, 44100, speedx(stretched[window_size:], factor))
 
     return
@@ -311,9 +319,9 @@ def create_noisy_set(filename):
     add_violet_noise(filename)
     add_brown_noise(filename)
 
-def add_noise_white(filename):
+def add_white_noise(filename):
     print "Adding White Noise..."
-    fps, snd_array = wavefile.read(filename)
+    fps, snd_array = wavfile.read(filename)
     noise1 = noise.white(len(snd_array))
     noise1 = map(lambda x: int(x/.01), noise1)
 
@@ -328,7 +336,7 @@ def add_noise_white(filename):
 
 def add_pink_noise(filename):
     print "Adding Pink Noise..."
-    fps, snd_array = wavefile.read(filename)
+    fps, snd_array = wavfile.read(filename)
     noise1 = noise.pink(len(snd_array))
     noise1 = map(lambda x: int(x/.01), noise1)
 
@@ -344,7 +352,7 @@ def add_pink_noise(filename):
 
 def add_violet_noise(filename):
     print "Adding Violet Noise..."
-    fps, snd_array = wavefile.read(filename)
+    fps, snd_array = wavfile.read(filename)
     noise1 = noise.white(len(snd_array))
     noise1 = map(lambda x: int(x/.01), noise1)
 
@@ -360,7 +368,7 @@ def add_violet_noise(filename):
 def add_brown_noise(filename):
     def add_noise_white(filename):
         print "Adding Brown Noise..."
-        fps, snd_array = wavefile.read(filename)
+        fps, snd_array = wavfile.read(filename)
         noise1 = noise.brown(len(snd_array))
         noise1 = map(lambda x: int(x/.01), noise1)
 
@@ -379,10 +387,11 @@ def add_brown_noise(filename):
 if __name__ == '__main__':
     print "Starting training...\n"
     filename = '../audio/originals/Adele_Solo.wav'
-
-
+    '''Make chopped and transformed directories'''
+    os.mkdir('../audio/transformed')
+    os.mkdir('../audio/chopped')
     '''Copy file into the 'transformations' folder'''
-    copyfile(filename, '../audio/transformed/origninal.wav')
+    copyfile(filename, '../audio/transformed/original.wav')
 
     rootdir = '../audio/transformed'
 
@@ -392,20 +401,25 @@ if __name__ == '__main__':
 
     '''add noisy copies'''
     for filename in os.listdir(os.getcwd()):
+        if filename.endswith(".wav"):
             create_noisy_set(filename)
 
+    print "TEST 1: FFT:"
     '''Chop and Transform each track'''
     X = pd.DataFrame()
     y = []
-    for filename in os.listdir(os.getcwd()):
-        snippets = (chop_song(filename, "chopped"))
-        prints, labels = transform_multiple(snippets)
-        X.append(pd.DataFrame(prints))
-        y = np.concatenate((y,labels), axis = 0)
+    for filename in os.listdir('../audio/transformed'):
+        if filename.endswith(".wav"):
+            snippets = (chop_song('../audio/transformed/'+ filename, "chopped"))
+            prints, labels = transform_multiple_fft(snippets)
+            X = X.append(pd.DataFrame(prints))
+            y = np.concatenate((y,labels), axis = 0)
 
-
+    #SAVE THE MODEL:
+    fit_rf(X,y,'rf_fft')
     '''Cross Validate'''
     X_train, X_test, y_train, y_test = train_test_split(X, y)
+
 
     def get_scores(classifier, X_train, X_test, y_train, y_test, **kwargs):
         model = classifier(**kwargs)
@@ -420,8 +434,34 @@ if __name__ == '__main__':
     print "    Logistic Regression:", get_scores(LogisticRegression, X_train, X_test, y_train, y_test)
     print "    Decision Tree:", get_scores(DecisionTreeClassifier, X_train, X_test, y_train, y_test)
     print "    SVM:", get_scores(SVC, X_train, X_test, y_train, y_test)
-    print "    Naive Bayes:", get_scores(MultinomialNB, X_train, X_test, y_train, y_test)
+    #print "    Naive Bayes:", get_scores(MultinomialNB, X_train, X_test, y_train, y_test)
 
+
+    print "Test 2: Using Peak Analysis"
+    '''Chop and Transform each track'''
+    X = pd.DataFrame()
+    y = []
+    for filename in os.listdir('../audio/transformed'):
+        if filename.endswith(".wav"):
+            snippets = (chop_song('../audio/transformed/'+ filename, "chopped"))
+            prints, labels = transform_multiple_peak_analysis(snippets)
+            X = X.append(pd.DataFrame(prints))
+            y = np.concatenate((y,labels), axis = 0)
+
+    #SAVE THE MODEL:
+    fit_rf(X,y,'rf_peak_analysis')
+    '''Cross Validate'''
+    X_train, X_test, y_train, y_test = train_test_split(X, y)
+    print "    Model, Accuracy, Precision, Recall"
+    print "    Random Forest:", get_scores(RandomForestClassifier, X_train, X_test, y_train, y_test, n_estimators=25, max_features=5)
+    print "    Logistic Regression:", get_scores(LogisticRegression, X_train, X_test, y_train, y_test)
+    print "    Decision Tree:", get_scores(DecisionTreeClassifier, X_train, X_test, y_train, y_test)
+    print "    SVM:", get_scores(SVC, X_train, X_test, y_train, y_test)
+
+
+
+
+    '''
 
     #
     # ss = StandardScaler()
@@ -452,9 +492,9 @@ if __name__ == '__main__':
     #
     # with open('../models/ss.pkl', 'wb') as f:
     #     cPickle.dump(ss, f)
-
+    '''
     print "Models ready!....Cleaning up"
-    shutil.rmtree('../audio/transformed')
-    shutil.rmtree('../audio/snippets')
+    shutil.rmtree('../audio/transformed/')
+    shutil.rmtree('../audio/chopped/')
 
     print "Done!"
