@@ -1,13 +1,16 @@
+import warnings
+warnings.filterwarnings("ignore")
 from record import run
 from transform import transform
 from predict import predict
+
 from play import pull_predictions
 import thread
 import Queue
 from train import getModel
 from time import sleep
 
-import warnings
+
 
 
 
@@ -20,7 +23,7 @@ if __name__ == '__main__':
 
 
 
-    model = getModel('../models/rf.pkl')
+    model = getModel('../models/LogisticRegPeakAnalysis.pkl')
 
     try:
         thread.start_new_thread( transform, (wav_queue, fft_queue, ) )

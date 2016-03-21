@@ -41,6 +41,17 @@ from allantools import noise
 
 import shutil
 
+
+
+from time import time
+from operator import itemgetter
+from scipy.stats import randint as sp_randint
+
+from sklearn.grid_search import GridSearchCV, RandomizedSearchCV
+from sklearn.datasets import load_digits
+from sklearn.ensemble import RandomForestClassifier
+
+
 '''
 STEPS FOR TRAINING:
 
@@ -85,7 +96,7 @@ def chop_song(filename, folder):
     handle = wave.open(filename, 'rb')
     frame_rate = handle.getframerate()
     n_frames = handle.getnframes()
-    window_size = 2 * frame_rate
+    window_size = 3 * frame_rate
     num_secs = int(math.ceil(n_frames/frame_rate))
 
     snippet_list = []
@@ -123,7 +134,7 @@ def transform_multiple_fft(snippet_list):
             #plt.plot(abs(c[:(d-1)]),'r')
             #plt.show()
             thumbprint = abs(c[:(d-1)])
-            prints.append(thumbprint)
+            transformations.append(thumbprint)
             #ids.append(item[1])
             labels.append(item[1])
         except ValueError:
@@ -209,7 +220,6 @@ def single_file_featurization(wavfile):
     '''
 
     # print statements to update the progress of the processing
-    print wavfile
     try:
         # load the raw audio .wav file as a matrix using librosa
         wav_mat, sr = lr.load(wavfile, sr=sample_rate)
@@ -385,27 +395,94 @@ def add_brown_noise(filename):
 
 
 if __name__ == '__main__':
-    print "Starting training...\n"
-    filename = '../audio/originals/Adele_Solo.wav'
-    '''Make chopped and transformed directories'''
-    os.mkdir('../audio/transformed')
-    os.mkdir('../audio/chopped')
-    '''Copy file into the 'transformations' folder'''
-    copyfile(filename, '../audio/transformed/original.wav')
+    # print "Starting training...\n"
+    # filename = '../audio/originals/Adele_Solo.wav'
+    #
+    # '''Make chopped and transformed directories'''
+    # os.mkdir('../audio/transformed')
+    # os.mkdir('../audio/chopped')
+    # '''Copy file into the 'transformations' folder'''
+    # copyfile(filename, '../audio/transformed/original.wav')
+    #
+    # rootdir = '../audio/transformed'
+    #
+    # '''pitch bend 8 steps up and down from the origninal'''
+    # for i in range(-8,8):
+    #     pitchshift('../audio/transformed/original.wav', i)
+    #
+    # '''add noisy copies'''
+    # for filename in os.listdir(os.getcwd()):
+    #     if filename.endswith(".wav"):
+    #         create_noisy_set(filename)
 
-    rootdir = '../audio/transformed'
+    # print "TEST 1: FFT:"
+    # '''Chop and Transform each track'''
+    # X = pd.DataFrame()
+    # y = []
+    # for filename in os.listdir('../audio/transformed'):
+    #     if filename.endswith(".wav"):
+    #         snippets = (chop_song('../audio/transformed/'+ filename, "chopped"))
+    #         prints, labels = transform_multiple_fft(snippets)
+    #         X = X.append(pd.DataFrame(prints))
+    #         y = np.concatenate((y,labels), axis = 0)
+    #
+    # #SAVE THE MODEL:
+    # fit_rf(X,y,'rf_fft')
+    # '''Cross Validate'''
+    # X_train, X_test, y_train, y_test = train_test_split(X, y)
+    #
+    #
 
-    '''pitch bend 8 steps up and down from the origninal'''
-    for i in range(-8,8):
-        pitchshift('../audio/transformed/origninal.wav', i)
+    #
+    # print "fitting to LR"
+    # LR = LogisticRegression()
+    # print 'fitting....'
+    # LR.fit(X,y)
+    # print 'pickling....'
+    # pickle_model(LR, "LogisticRegFFT")
+    #
+    # print "fitting to Random Forenst"
+    # rf = RandomForestClassifier(X,y, n_estimators=250, max_features=30)
+    # print 'fitting....'
+    # rf.fit(X,y)
+    # print 'pickling.....'
+    # pickle_model(rf, "RandomForestFFT")
 
-    '''add noisy copies'''
-    for filename in os.listdir(os.getcwd()):
-        if filename.endswith(".wav"):
-            create_noisy_set(filename)
 
-    print "TEST 1: FFT:"
-    '''Chop and Transform each track'''
+    # print "Test 2: Using Peak Analysis"
+    # # '''Chop and Transform each track'''
+    # X = pd.DataFrame()
+    # y = []
+    # for filename in os.listdir('../audio/transformed'):
+    #     if filename.endswith(".wav"):
+    #         snippets = (chop_song('../audio/transformed/'+ filename, "chopped"))
+    #         prints, labels = transform_multiple_peak_analysis(snippets)
+    #         X = X.append(pd.DataFrame(prints))
+    #         y = np.concatenate((y,labels), axis = 0)
+    #
+    # #SAVE THE MODEL:
+    # # fit_rf(X,y,'rf_peak_analysis')
+    # '''Cross Validate'''
+    # print "    Model, Accuracy, Precision, Recall"
+    # print "    Random Forest:", get_scores(RandomForestClassifier, X_train, X_test, y_train, y_test, n_estimators=25, max_features=5)
+    # print "    Logistic Regression:", get_scores(LogisticRegression, X_train, X_test, y_train, y_test)
+    # print "    Decision Tree:", get_scores(DecisionTreeClassifier, X_train, X_test, y_train, y_test)
+    # print "    SVM:", get_scores(SVC, X_train, X_test, y_train, y_test)
+    # print "fitting to LR"
+    # LR = LogisticRegression()
+    # print 'fitting....'
+    # LR.fit(X,y)
+    # print 'pickling....'
+    # pickle_model(LR, "LogisticRegPeakAnalysis")
+    #
+    # print "fitting to Random Forenst"
+    # rf = RandomForestClassifier(n_estimators=30)
+    # print 'fitting....'
+    # rf.fit(X,y)
+    # print 'pickling.....'
+    # pickle_model(rf, "RandomForestPeakAnalysis")
+
+    print "fitting with regular fft"
     X = pd.DataFrame()
     y = []
     for filename in os.listdir('../audio/transformed'):
@@ -414,31 +491,11 @@ if __name__ == '__main__':
             prints, labels = transform_multiple_fft(snippets)
             X = X.append(pd.DataFrame(prints))
             y = np.concatenate((y,labels), axis = 0)
+    X = X.fillna(0)
+    print "Saving X..."
+    pickle_model(X, "X_fft")
 
-    #SAVE THE MODEL:
-    fit_rf(X,y,'rf_fft')
-    '''Cross Validate'''
-    X_train, X_test, y_train, y_test = train_test_split(X, y)
-
-
-    def get_scores(classifier, X_train, X_test, y_train, y_test, **kwargs):
-        model = classifier(**kwargs)
-        model.fit(X_train, y_train)
-        y_predict = model.predict(X_test)
-        return model.score(X_test, y_test), \
-               precision_score(y_test, y_predict), \
-               recall_score(y_test, y_predict)
-
-    print "    Model, Accuracy, Precision, Recall"
-    print "    Random Forest:", get_scores(RandomForestClassifier, X_train, X_test, y_train, y_test, n_estimators=25, max_features=5)
-    print "    Logistic Regression:", get_scores(LogisticRegression, X_train, X_test, y_train, y_test)
-    print "    Decision Tree:", get_scores(DecisionTreeClassifier, X_train, X_test, y_train, y_test)
-    print "    SVM:", get_scores(SVC, X_train, X_test, y_train, y_test)
-    #print "    Naive Bayes:", get_scores(MultinomialNB, X_train, X_test, y_train, y_test)
-
-
-    print "Test 2: Using Peak Analysis"
-    '''Chop and Transform each track'''
+    print "fitting with peak Analysis"
     X = pd.DataFrame()
     y = []
     for filename in os.listdir('../audio/transformed'):
@@ -447,23 +504,16 @@ if __name__ == '__main__':
             prints, labels = transform_multiple_peak_analysis(snippets)
             X = X.append(pd.DataFrame(prints))
             y = np.concatenate((y,labels), axis = 0)
-
-    #SAVE THE MODEL:
-    fit_rf(X,y,'rf_peak_analysis')
-    '''Cross Validate'''
-    X_train, X_test, y_train, y_test = train_test_split(X, y)
-    print "    Model, Accuracy, Precision, Recall"
-    print "    Random Forest:", get_scores(RandomForestClassifier, X_train, X_test, y_train, y_test, n_estimators=25, max_features=5)
-    print "    Logistic Regression:", get_scores(LogisticRegression, X_train, X_test, y_train, y_test)
-    print "    Decision Tree:", get_scores(DecisionTreeClassifier, X_train, X_test, y_train, y_test)
-    print "    SVM:", get_scores(SVC, X_train, X_test, y_train, y_test)
+    X = X.fillna(0)
+    print "Saving X...."
+    pickle_model(y, 'y')
+    pickle_model(X, "X_Peak_Analysis")
 
 
 
 
-    '''
 
-    #
+    # print "Fitting with LDA"
     # ss = StandardScaler()
     # X = ss.fit_transform(X)
     #
@@ -471,15 +521,16 @@ if __name__ == '__main__':
     #
     # X_lda = lda.fit_transform(X, y)
     #
+    # X_train, X_test, y_train, y_test = train_test_split(X, y)
     #
     # # trains model using best performing model/hyperparameters using kfold grid search
     # svm = SVC(C=1, gamma=0.04)
-    # #svm.fit(X_lda, y)
-    # svm.fit(X,y)
+    # svm.fit(X_train, y_train)
+    # #svm.fit(X,y)
     # # accuracy check to make sure the model is performing
     # #y_pred_svm = svm.predict(X_lda)
-    # y_pred_svm = svm.predict(X)
-    # print 'model accuracy: ', accuracy_score(y, y_pred_svm)
+    # y_pred_svm = svm.predict(X_test)
+    # print 'model accuracy: ', accuracy_score(y_test, y_pred_svm)
     #
     #
     #
@@ -492,9 +543,9 @@ if __name__ == '__main__':
     #
     # with open('../models/ss.pkl', 'wb') as f:
     #     cPickle.dump(ss, f)
-    '''
+
     print "Models ready!....Cleaning up"
-    shutil.rmtree('../audio/transformed/')
-    shutil.rmtree('../audio/chopped/')
+    # shutil.rmtree('../audio/transformed/')
+    # shutil.rmtree('../audio/chopped/')
 
     print "Done!"
