@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
 
 
-    model = getModel('../models/LogisticRegPeakAnalysis.pkl')
+    model = getModel('../models/svm_2sec_peakAn.pkl')
 
     try:
         thread.start_new_thread( transform, (wav_queue, fft_queue, ) )

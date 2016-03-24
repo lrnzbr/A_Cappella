@@ -27,7 +27,7 @@ def convert_mark_to_seconds(mark):
 def play_at_prediction(mark, time_delay=0):
     print "playing at ", convert_to_timestamp(mark), "with time delay of", time.time() - time_delay
     p = pyaudio.PyAudio()
-    wf = wave.open('../audio/originals/Adele_Instrumental.wav', 'rb')
+    wf = wave.open('../audio/originals/Adele_Solo.wav', 'rb')
     framerate = wf.getframerate()
     stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
                     channels=wf.getnchannels(),

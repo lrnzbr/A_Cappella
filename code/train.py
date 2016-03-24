@@ -57,9 +57,9 @@ STEPS FOR TRAINING:
 
 1.  Copy the input audio file to the 'transformed' folder
 
-2.  Add white noise and pink noise to the original file
+2.  Add pitch bend for one octave up and down to all files.
 
-3.  Add pitch bend for one octave up and down to all files.
+3.  Add white,pink, violet and brown noise to the original file
 
 4. Chop all files into snippets.
 
@@ -96,7 +96,7 @@ def chop_song(filename, folder):
     handle = wave.open(filename, 'rb')
     frame_rate = handle.getframerate()
     n_frames = handle.getnframes()
-    window_size = 3 * frame_rate
+    window_size = 1 * frame_rate
     num_secs = int(math.ceil(n_frames/frame_rate))
 
     snippet_list = []
@@ -331,7 +331,7 @@ def create_noisy_set(filename):
 
 def add_white_noise(filename):
     print "Adding White Noise..."
-    fps, snd_array = wavfile.read(filename)
+    fps, snd_array = wavfile.read('../audio/transformed/' + filename)
     noise1 = noise.white(len(snd_array))
     noise1 = map(lambda x: int(x/.01), noise1)
 
@@ -346,7 +346,7 @@ def add_white_noise(filename):
 
 def add_pink_noise(filename):
     print "Adding Pink Noise..."
-    fps, snd_array = wavfile.read(filename)
+    fps, snd_array = wavfile.read('../audio/transformed/' + filename)
     noise1 = noise.pink(len(snd_array))
     noise1 = map(lambda x: int(x/.01), noise1)
 
@@ -362,7 +362,7 @@ def add_pink_noise(filename):
 
 def add_violet_noise(filename):
     print "Adding Violet Noise..."
-    fps, snd_array = wavfile.read(filename)
+    fps, snd_array = wavfile.read('../audio/transformed/' + filename)
     noise1 = noise.white(len(snd_array))
     noise1 = map(lambda x: int(x/.01), noise1)
 
@@ -376,9 +376,8 @@ def add_violet_noise(filename):
     return
 
 def add_brown_noise(filename):
-    def add_noise_white(filename):
         print "Adding Brown Noise..."
-        fps, snd_array = wavfile.read(filename)
+        fps, snd_array = wavfile.read('../audio/transformed/' + filename)
         noise1 = noise.brown(len(snd_array))
         noise1 = map(lambda x: int(x/.01), noise1)
 
@@ -395,8 +394,8 @@ def add_brown_noise(filename):
 
 
 if __name__ == '__main__':
-    # print "Starting training...\n"
-    # filename = '../audio/originals/Adele_Solo.wav'
+    print "Starting training...\n"
+    filename = '../audio/originals/Adele_Solo.wav'
     #
     # '''Make chopped and transformed directories'''
     # os.mkdir('../audio/transformed')
@@ -410,8 +409,8 @@ if __name__ == '__main__':
     # for i in range(-8,8):
     #     pitchshift('../audio/transformed/original.wav', i)
     #
-    # '''add noisy copies'''
-    # for filename in os.listdir(os.getcwd()):
+    # print '''add noisy copies'''
+    # for filename in os.listdir('../audio/transformed'):
     #     if filename.endswith(".wav"):
     #         create_noisy_set(filename)
 
@@ -482,35 +481,37 @@ if __name__ == '__main__':
     # print 'pickling.....'
     # pickle_model(rf, "RandomForestPeakAnalysis")
 
-    print "fitting with regular fft"
-    X = pd.DataFrame()
-    y = []
-    for filename in os.listdir('../audio/transformed'):
-        if filename.endswith(".wav"):
-            snippets = (chop_song('../audio/transformed/'+ filename, "chopped"))
-            prints, labels = transform_multiple_fft(snippets)
-            X = X.append(pd.DataFrame(prints))
-            y = np.concatenate((y,labels), axis = 0)
-    X = X.fillna(0)
-    print "Saving X..."
-    pickle_model(X, "X_fft")
+    # print "fitting with regular fft"
+    # X = pd.DataFrame()
+    # y = []
+    # for filename in os.listdir('../audio/transformed'):
+    #     if filename.endswith(".wav"):
+    #         snippets = (chop_song('../audio/transformed/'+ filename, "chopped"))
+    #         prints, labels = transform_multiple_fft(snippets)
+    #         X = X.append(pd.DataFrame(prints))
+    #         y = np.concatenate((y,labels), axis = 0)
+    # X = X.fillna(0)
+    # print "Saving X..."
+    # pickle_model(X, "X_fft")
 
     print "fitting with peak Analysis"
     X = pd.DataFrame()
     y = []
     for filename in os.listdir('../audio/transformed'):
-        if filename.endswith(".wav"):
+        if filename.endswith(".wav") and "noise" not in filename:# and "pitch" not in filename:
+            print filename
             snippets = (chop_song('../audio/transformed/'+ filename, "chopped"))
-            prints, labels = transform_multiple_peak_analysis(snippets)
+            #prints, labels = transform_multiple_peak_analysis(snippets)
+            prints, labels = transform_multiple_fft(snippets)
             X = X.append(pd.DataFrame(prints))
             y = np.concatenate((y,labels), axis = 0)
     X = X.fillna(0)
     print "Saving X...."
     pickle_model(y, 'y')
-    pickle_model(X, "X_Peak_Analysis")
+    pickle_model(X, "X_Peak_Analysis_2sec")
 
 
-
+    print X, y
 
 
     # print "Fitting with LDA"

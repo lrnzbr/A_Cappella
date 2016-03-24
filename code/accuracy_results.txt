@@ -1,0 +1,47 @@
+Model, Accuracy, Precision, Recall
+
+Random Forest:
+//anaconda/lib/python2.7/site-packages/sklearn/metrics/classification.py:1203: DeprecationWarning: The default `weighted` averaging is deprecated, and from version 0.18, use of precision, recall or F-score with multiclass or multilabel data or pos_label=None will result in an exception. Please set an explicit value for `average`, one of (None, 'micro', 'macro', 'weighted', 'samples'). In cross validation use, for instance, scoring="f1_weighted" instead of scoring="f1".
+  sample_weight=sample_weight)
+//anaconda/lib/python2.7/site-packages/sklearn/metrics/classification.py:1074: UndefinedMetricWarning: Precision is ill-defined and being set to 0.0 in labels with no predicted samples.
+  'precision', 'predicted', average, warn_for)
+//anaconda/lib/python2.7/site-packages/sklearn/metrics/classification.py:1304: DeprecationWarning: The default `weighted` averaging is deprecated, and from version 0.18, use of precision, recall or F-score with multiclass or multilabel data or pos_label=None will result in an exception. Please set an explicit value for `average`, one of (None, 'micro', 'macro', 'weighted', 'samples'). In cross validation use, for instance, scoring="f1_weighted" instead of scoring="f1".
+  sample_weight=sample_weight)
+//anaconda/lib/python2.7/site-packages/sklearn/metrics/classification.py:1076: UndefinedMetricWarning: Recall is ill-defined and being set to 0.0 in labels with no true samples.
+  'recall', 'true', average, warn_for)
+(0.43773234200743494, 0.45286776420605418, 0.43773234200743494)
+
+Logistic Regression:
+//anaconda/lib/python2.7/site-packages/sklearn/metrics/classification.py:1203: DeprecationWarning: The default `weighted` averaging is deprecated, and from version 0.18, use of precision, recall or F-score with multiclass or multilabel data or pos_label=None will result in an exception. Please set an explicit value for `average`, one of (None, 'micro', 'macro', 'weighted', 'samples'). In cross validation use, for instance, scoring="f1_weighted" instead of scoring="f1".
+  sample_weight=sample_weight)
+//anaconda/lib/python2.7/site-packages/sklearn/metrics/classification.py:1304: DeprecationWarning: The default `weighted` averaging is deprecated, and from version 0.18, use of precision, recall or F-score with multiclass or multilabel data or pos_label=None will result in an exception. Please set an explicit value for `average`, one of (None, 'micro', 'macro', 'weighted', 'samples'). In cross validation use, for instance, scoring="f1_weighted" instead of scoring="f1".
+  sample_weight=sample_weight)
+(0.38289962825278812, 0.41060143388210302, 0.38289962825278812)
+
+Decision Tree:
+//anaconda/lib/python2.7/site-packages/sklearn/metrics/classification.py:1203: DeprecationWarning: The default `weighted` averaging is deprecated, and from version 0.18, use of precision, recall or F-score with multiclass or multilabel data or pos_label=None will result in an exception. Please set an explicit value for `average`, one of (None, 'micro', 'macro', 'weighted', 'samples'). In cross validation use, for instance, scoring="f1_weighted" instead of scoring="f1".
+  sample_weight=sample_weight)
+//anaconda/lib/python2.7/site-packages/sklearn/metrics/classification.py:1304: DeprecationWarning: The default `weighted` averaging is deprecated, and from version 0.18, use of precision, recall or F-score with multiclass or multilabel data or pos_label=None will result in an exception. Please set an explicit value for `average`, one of (None, 'micro', 'macro', 'weighted', 'samples'). In cross validation use, for instance, scoring="f1_weighted" instead of scoring="f1".
+  sample_weight=sample_weight)
+(0.32249070631970261, 0.35342290402699322, 0.32249070631970261)
+
+SVM:
+//anaconda/lib/python2.7/site-packages/sklearn/metrics/classification.py:1203: DeprecationWarning: The default `weighted` averaging is deprecated, and from version 0.18, use of precision, recall or F-score with multiclass or multilabel data or pos_label=None will result in an exception. Please set an explicit value for `average`, one of (None, 'micro', 'macro', 'weighted', 'samples'). In cross validation use, for instance, scoring="f1_weighted" instead of scoring="f1".
+  sample_weight=sample_weight)
+//anaconda/lib/python2.7/site-packages/sklearn/metrics/classification.py:1304: DeprecationWarning: The default `weighted` averaging is deprecated, and from version 0.18, use of precision, recall or F-score with multiclass or multilabel data or pos_label=None will result in an exception. Please set an explicit value for `average`, one of (None, 'micro', 'macro', 'weighted', 'samples'). In cross validation use, for instance, scoring="f1_weighted" instead of scoring="f1".
+  sample_weight=sample_weight)
+(0.0018587360594795538, 0.00093117966332601442, 0.0018587360594795538)
+TEST 4 FAILED! (<type 'exceptions.TypeError'>, TypeError("'module' object is not callable",), <traceback object at 0x10236b8c0>)A Cappella Audio Classifier Scores
+20/03/201604:47:54
+Test 3: Using Peak Analysis - Get Scores from all models
+A Cappella Audio Classifier Scores
+20/03/201604:49:01
+Test 3: Using Peak Analysis - Get Scores from all models
+Test 4: RandomForest GridSearch with Peak AnalysisA Cappella Audio Classifier Scores
+20/03/201609:15:14
+Test 3: Using Peak Analysis - Get Scores from all models
+Test 4: RandomForest GridSearch with Peak AnalysisA Cappella Audio Classifier Scores
+20/03/201609:35:28
+Test 3: Using Peak Analysis - Get Scores from all models
+Test 4: RandomForest GridSearch with Peak AnalysisA Cappella Audio Classifier Scores
+21/03/201606:46:10
