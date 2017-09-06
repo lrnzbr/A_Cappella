@@ -1,7 +1,7 @@
 # a cappella
 classification algorithm that finds where you are in a song .
 
-View a video of the beta version [here](https://youtu.be/68VAeFjwb6E) 
+View a video of the beta version [here](https://youtu.be/68VAeFjwb6E). 
 
 
 
